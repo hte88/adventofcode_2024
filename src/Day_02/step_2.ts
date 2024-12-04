@@ -2,6 +2,46 @@ const decoder: TextDecoder = new TextDecoder('utf-8');
 
 const filePath: string = new URL('./input.txt', import.meta.url).pathname;
 
+function isSafe(numbers) {
+  let previousSign: number | null = null;
+  let reportsSafe: number = 0;
+  for (let i = 0; i < numbers.length - 1; i++) {
+    const current = numbers[i];
+    const next = numbers[i + 1];
+    const diff = Math.abs(current - next);
+    const currentSign = Math.sign(current - next);
+
+    const isSafe = diff > 0 && diff <= 3;
+
+    if (isSafe && (previousSign === null || previousSign === currentSign)) {
+      reportsSafe++;
+    } else {
+      reportsSafe = 0;
+    }
+    previousSign = currentSign;
+  }
+  return reportsSafe;
+}
+
+function tolerate(numbers: number[], index: number = 0): Boolean {
+  if (index >= numbers.length) {
+    return false;
+  }
+  if (index === 0 && isSafe(numbers) >= numbers.length - 1) {
+    return true;
+  }
+  const reducedNumbers = [
+    ...numbers.slice(0, index),
+    ...numbers.slice(index + 1),
+  ];
+
+  if (isSafe(reducedNumbers) >= reducedNumbers.length - 1) {
+    return true;
+  }
+
+  return tolerate(numbers, index + 1);
+}
+
 try {
   const data: Uint8Array = await Deno.readFile(filePath);
   const fileContent: string = decoder.decode(data);
@@ -12,44 +52,8 @@ try {
 
   rows.forEach((row: string): void => {
     const numbers: number[] = row.split(' ').map(Number);
-    let reportsSafe: number = 0;
-    let previousSign: number | null = null;
-    let variation = 0;
-    let countSame = 0;
-
-    for (let i = 0; i < numbers.length - 1; i++) {
-      const current = numbers[i];
-      const next = numbers[i + 1];
-      const diff = Math.abs(current - next);
-      const currentSign = Math.sign(current - next);
-
-      const isSafe = current === next || (diff > 0 && diff <= 3);
-      if (current === next) {
-        countSame++;
-      }
-      if (isSafe && (previousSign === null || previousSign === currentSign)) {
-        reportsSafe++;
-      } else {
-        if (previousSign !== currentSign) {
-          variation++;
-        } else reportsSafe = 0;
-      }
-
-      if (variation <= 2 && variation > 0 && i === numbers.length - 2) {
-        reportsSafe += 2;
-      }
-      if (countSame >= 2) {
-        reportsSafe = 0;
-      }
-
-      previousSign = currentSign;
-      console.log(variation);
-
-      if (reportsSafe >= numbers.length - 1) {
-        console.log(row);
-        totalValidReports++;
-        break;
-      }
+    if (tolerate(numbers)) {
+      totalValidReports++;
     }
   });
 
