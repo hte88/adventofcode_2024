@@ -11,34 +11,43 @@ try {
 
   function findRule(page) {
     return rules
-      .filter((rule) => page === rule.split('|')[0])
+      .filter((rule) => page === Number(rule.split('|')[0]))
       .map((rule) => Number(rule?.split('|')[1]))
       .sort();
   }
 
   const res = pages.map((page) => {
-    const numberPage = page.split(',');
-    return numberPage.sort((next, current) => {
+    const numberPage = page.split(',').map(Number);
+    return numberPage.sort((current, next) => {
       const rule = findRule(current);
-      console.log(rule);
-
-      console.log('current =', current, 'next', next, 'rule =', rule);
-
-      if (Number(current) < rule.find((n) => +n === Number(next))) {
+      if (rule.includes(next)) {
         return -1;
       }
-      if (Number(current) > rule.find((n) => +n === Number(next))) {
+      if (rule.includes(next)) {
         return 1;
       }
       return 0;
     });
   });
 
-  console.log(res);
+  const keep = [];
+  res.map((ite, i) => {
+    const f = pages[i].split(',').map(Number);
+    if (JSON.stringify(ite) == JSON.stringify(f)) {
+      keep.push(ite);
+    }
+  });
 
-  const totalOccurrences = '';
+  console.log(keep.length);
 
-  console.log('Total des occurences: ', totalOccurrences);
+  const totalOccurrences = keep.map((numbers) => {
+    return numbers[Math.round((numbers.length - 1) / 2)];
+  });
+
+  console.log(
+    'Total des occurences: ',
+    totalOccurrences.reduce((a, b) => a + b)
+  );
 } catch (error) {
   console.error('Erreur lors de la lecture du fichier: ', error.message);
 }
