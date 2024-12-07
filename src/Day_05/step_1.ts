@@ -1,3 +1,6 @@
+import 'https://deno.land/x/lodash@4.17.19/dist/lodash.js';
+
+const _ = (self as any)._;
 const decoder: TextDecoder = new TextDecoder('utf-8');
 const filePath: string = new URL('./input.txt', import.meta.url).pathname;
 
@@ -12,41 +15,37 @@ try {
   function findRule(page) {
     return rules
       .filter((rule) => page === Number(rule.split('|')[0]))
-      .map((rule) => Number(rule?.split('|')[1]))
-      .sort();
+      .map((rule) => Number(rule?.split('|')[1]));
   }
 
-  const res = pages.map((page) => {
-    const numberPage = page.split(',').map(Number);
-    return numberPage.sort((current, next) => {
-      const rule = findRule(current);
-      if (rule.includes(next)) {
-        return -1;
-      }
-      if (rule.includes(next)) {
-        return 1;
-      }
-      return 0;
+  function sortByRules() {
+    return pages.map((page) => {
+      const numberPage = page.split(',').map(Number);
+      return numberPage.sort((current, next) => {
+        const rule = findRule(current);
+        if (rule.includes(next)) {
+          return -1;
+        }
+        if (!rule.includes(next)) {
+          return 1;
+        }
+        return 0;
+      });
     });
-  });
+  }
 
-  const keep = [];
-  res.map((ite, i) => {
-    const f = pages[i].split(',').map(Number);
-    if (JSON.stringify(ite) == JSON.stringify(f)) {
-      keep.push(ite);
-    }
+  const keep = sortByRules().filter((page, i) => {
+    const pageOrigin = pages[i].split(',').map(Number);
+    return _.isEqual(page, pageOrigin);
   });
-
-  console.log(keep.length);
 
   const totalOccurrences = keep.map((numbers) => {
     return numbers[Math.round((numbers.length - 1) / 2)];
   });
 
   console.log(
-    'Total des occurences: ',
-    totalOccurrences.reduce((a, b) => a + b)
+    'Total pages : ',
+    totalOccurrences.reduce((a, b) => a + b, 0)
   );
 } catch (error) {
   console.error('Erreur lors de la lecture du fichier: ', error.message);
