@@ -4,21 +4,21 @@ const _ = (self as any)._;
 const decoder: TextDecoder = new TextDecoder('utf-8');
 const filePath: string = new URL('./input.txt', import.meta.url).pathname;
 
-interface res {
-  result: number;
-  combination?: number;
+interface Result {
+  target: number;
+  calculated?: number;
   numbers: number[];
 }
 
 function generateCombination(
   index: number,
-  posibilities: number,
+  count: number,
   operators: string[]
 ) {
   const combination: string[] = [];
   const totalOperators: number = operators.length;
 
-  for (let i = 0; i < posibilities; i++) {
+  for (let i = 0; i < count; i++) {
     combination.unshift(operators[index % totalOperators]);
     index = Math.floor(index / totalOperators);
   }
@@ -26,7 +26,7 @@ function generateCombination(
   return combination;
 }
 
-function calculCombination(numbers: number[], combination: string[]): number {
+function calculateExpression(numbers: number[], combination: string[]): number {
   let calcul = '';
   for (let index = 0; index < numbers.length; index++) {
     const element: number = numbers[index];
@@ -45,35 +45,36 @@ try {
   const content: string[] = fileContent.split('\n').slice(0, -1) ?? [];
 
   const operators: string[] = ['+', '*'];
-  const ok: res[] = [];
-  const ko: res[] = [];
+  const successful: Result[] = [];
+  const failed: Result[] = [];
 
   for (let index = 0; index < content.length; index++) {
     const row = content[index];
-    const [result, numbersString] = row.split(':');
+    const [targetString, numbersString] = row.split(':');
+    const target = Number(targetString.trim());
     const numbers = numbersString.trim().split(' ').map(Number);
-    const numOperators = numbers.length - 1;
-    const totalCombinations = Math.pow(operators.length, numOperators);
+    const operatorCount = numbers.length - 1;
+    const totalCombinations = Math.pow(operators.length, operatorCount);
 
     for (let i = 0; i < totalCombinations; i++) {
-      const combination = generateCombination(i, numOperators, operators);
-      const calcul = calculCombination(numbers, combination);
+      const combination = generateCombination(i, operatorCount, operators);
+      const result = calculateExpression(numbers, combination);
 
-      if (calcul === Number(result)) {
-        ok.push({ result: Number(result), combination: calcul, numbers });
+      if (result === target) {
+        successful.push({ target, calculated: result, numbers });
         break;
       } else if (totalCombinations - 1 === i) {
-        ko.push({ result: Number(result), numbers });
+        failed.push({ target, numbers });
       }
     }
   }
 
-  const totalOccurrences = ok.map(({ result }) => result);
-
-  console.log(
-    'Total pages : ',
-    totalOccurrences.reduce((a, b) => a + b, 0)
+  const totalOccurrences = successful.reduce(
+    (sum, { target }) => sum + target,
+    0
   );
+
+  console.log('Total pages : ', totalOccurrences);
 } catch (error) {
   console.error('Erreur lors de la lecture du fichier: ', error.message);
 }
