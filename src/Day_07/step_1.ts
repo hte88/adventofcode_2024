@@ -4,6 +4,12 @@ const _ = (self as any)._;
 const decoder: TextDecoder = new TextDecoder('utf-8');
 const filePath: string = new URL('./input.txt', import.meta.url).pathname;
 
+interface res {
+  result: number;
+  combination?: number;
+  numbers: number[];
+}
+
 function generateCombination(
   index: number,
   posibilities: number,
@@ -20,15 +26,17 @@ function generateCombination(
   return combination;
 }
 
-function joinCombination(numbers: number[], combination: string[]): string {
+function calculCombination(numbers: number[], combination: string[]): number {
   let calcul = '';
   for (let index = 0; index < numbers.length; index++) {
     const element: number = numbers[index];
-    const operator: string = combination[index] ?? '';
-    calcul += `${element}${operator}`;
+    if (index === 0) {
+      calcul += eval(`${element}${combination[index]}${numbers[index + 1]}`);
+      index++;
+    } else calcul = eval(`${calcul} ${combination[index - 1]} ${element}`);
   }
 
-  return calcul;
+  return Number(calcul);
 }
 
 try {
@@ -37,8 +45,8 @@ try {
   const content: string[] = fileContent.split('\n').slice(0, -1) ?? [];
 
   const operators: string[] = ['+', '*'];
-  const ok = [];
-  const ko = [];
+  const ok: res[] = [];
+  const ko: res[] = [];
 
   for (let index = 0; index < content.length; index++) {
     const row = content[index];
@@ -47,26 +55,20 @@ try {
     const numOperators = numbers.length - 1;
     const totalCombinations = Math.pow(operators.length, numOperators);
 
-    /*   console.log('numbers =', numbers);
-    console.log('posibilite =', numOperators);
-    console.log('totalCombinations =', totalCombinations); */
-
     for (let i = 0; i < totalCombinations; i++) {
       const combination = generateCombination(i, numOperators, operators);
-      const calcul = joinCombination(numbers, combination);
-      console.log(eval(calcul), calcul, Number(result));
+      const calcul = calculCombination(numbers, combination);
 
-      if (eval(calcul) === Number(result)) {
+      if (calcul === Number(result)) {
         ok.push({ result: Number(result), combination: calcul, numbers });
-      } else {
-        ko.push({ result: Number(result), combination: calcul, numbers });
+        break;
+      } else if (totalCombinations - 1 === i) {
+        ko.push({ result: Number(result), numbers });
       }
     }
   }
 
-  //console.log(ok, ko);
-
-  const totalOccurrences = [0];
+  const totalOccurrences = ok.map(({ result }) => result);
 
   console.log(
     'Total pages : ',
