@@ -17,9 +17,19 @@ function generateCombination(
 ) {
   const combination: string[] = [];
   const totalOperators: number = operators.length;
+  let hasUsedOrOperator = false; // Vérifie si "||" a déjà été utilisé
 
   for (let i = 0; i < count; i++) {
-    combination.unshift(operators[index % totalOperators]);
+    const operator = operators[index % totalOperators];
+
+    if (operator === '||') {
+      if (hasUsedOrOperator) {
+        return null; // Invalide, "||" utilisé plus d'une fois
+      }
+      hasUsedOrOperator = true; // Marque que "||" a été utilisé
+    }
+
+    combination.unshift(operator);
     index = Math.floor(index / totalOperators);
   }
 
@@ -28,12 +38,29 @@ function generateCombination(
 
 function calculateExpression(numbers: number[], combination: string[]): number {
   let calcul = '';
+
+  if (combination.length <= 0) {
+    return 0;
+  }
+
+  //console.log(combination);
+
   for (let index = 0; index < numbers.length; index++) {
     const element: number = numbers[index];
     if (index === 0) {
-      calcul += eval(`${element}${combination[index]}${numbers[index + 1]}`);
+      if (combination[index] === '||') {
+        calcul += `${element}${numbers[index + 1]}`;
+      } else {
+        calcul += eval(`${element}${combination[index]}${numbers[index + 1]}`);
+      }
       index++;
-    } else calcul = eval(`${calcul} ${combination[index - 1]} ${element}`);
+    } else {
+      if (combination[index] === '||') {
+        calcul = `${calcul}${element}`;
+      } else {
+        calcul = eval(`${calcul} ${combination[index - 1]} ${element}`);
+      }
+    }
   }
 
   return Number(calcul);
@@ -44,7 +71,7 @@ try {
   const fileContent: string = decoder.decode(data);
   const content: string[] = fileContent.split('\n').slice(0, -1) ?? [];
 
-  const operators: string[] = ['+', '*'];
+  const operators: string[] = ['+', '*', '||'];
   const successful: Result[] = [];
   const failed: Result[] = [];
 
@@ -58,16 +85,22 @@ try {
 
     for (let i = 0; i < totalCombinations; i++) {
       const combination = generateCombination(i, operatorCount, operators);
-      const result = calculateExpression(numbers, combination);
 
-      if (result === target) {
-        successful.push({ target, calculated: result, numbers });
-        break;
-      } else if (totalCombinations - 1 === i) {
-        failed.push({ target, numbers });
+      if (combination?.includes('||')) {
+        const result = calculateExpression(numbers, combination ?? []);
+
+        if (result === target) {
+          successful.push({ target, calculated: result, numbers });
+          break;
+        } else if (totalCombinations - 1 === i) {
+          failed.push({ target, numbers });
+        }
       }
     }
   }
+
+  console.log(failed.length);
+  console.log(successful.length);
 
   const totalOccurrences = successful.reduce(
     (sum, { target }) => sum + target,
